@@ -27,7 +27,7 @@ public class TfsUserLookup implements UserLookup {
      */
     public User find(String accountName) {
         LOGGER.fine("Looking up Jenkins user for TFS account '%s'.");
-        final User jenkinsUser = User.get(accountName);
+        final User jenkinsUser = User.get(stripDomain(accountName));
         Mailer.UserProperty mailerProperty = jenkinsUser.getProperty(Mailer.UserProperty.class);
         if (mailerProperty == null || mailerProperty.getAddress() == null || mailerProperty.getAddress().length() == 0) {
             final TeamFoundationIdentity tfsUser = ims.readIdentity(
@@ -58,5 +58,17 @@ public class TfsUserLookup implements UserLookup {
         }
         return jenkinsUser;
     }
+    
+    /**
+     * Strips all characters to the left of the last backslash, and returns all the characters to the right. The goal is to 
+     * remove domains - they create bogus users https://issues.jenkins-ci.org/browse/JENKINS-26375
+     * @param accountName an active directory account.
+     * @return the active directory account, without the domain.
+     */
+	private static String stripDomain(String accountName) {
+		if (accountName == null) return null;
+		String[] parts = accountName.split("\\\\");
+		return parts[parts.length - 1];
+	}
 
 }
